@@ -1,0 +1,238 @@
+@startuml API Pedidos - Diagrama de Clases
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam packageStyle rectangle
+
+' ─────────────────────────────
+' MODELOS
+' ─────────────────────────────
+package "model" {
+
+  class Cliente {
+    - id : Long
+    - nombre : String
+    - direccion : String
+    - telefono : String
+    - correo : String
+    + listar() : List<Pedido>
+    + getNombre() : String
+    + setNombre(nombre: String) : void
+    + getCorreo() : String
+    + setCorreo(correo: String) : void
+  }
+
+  class Pedido {
+    - id : Long
+    - fecha : LocalDate
+    - estado : EstadoPedido
+    - total : double
+    + agregarItem(item: ItemPedido) : void
+    + cambiarEstado(estado: EstadoPedido) : void
+    + calcularSubtotal() : double
+    + calcularTotal(descuento: double, impuesto: double) : double
+  }
+
+  class ItemPedido {
+    - id : Long
+    - cantidad : int
+    + calcularSubtotal() : double
+  }
+
+  class Producto {
+    - id : Long
+    - nombre : String
+    - precio : double
+  }
+
+  class Envio {
+    - id : Long
+    - pedidoId : Long
+    - pesoKg : double
+    - costoEnvio : double
+    - direccionDestino : String
+    - fechaEnvio : LocalDateTime
+    - estadoEnvio : String
+    ~ numeroRastreo : String
+    + construirNumeroRastreo() : String
+    + actualizarPeso(peso: double) : void
+    # generarNumeroRastreoManual(id: Long, tipo: TipoEnvio) : String
+    - calcularCosto() : double
+  }
+
+  class Transaccion {
+    - id : Long
+    - pedidoId : Long
+    - monto : double
+    - fecha : LocalDateTime
+    ~ referencia : String
+    + esDevolucion() : boolean
+    + construirReferencia() : String
+    # generarReferenciaManual(id: Long, tipo: TipoTransaccion) : String
+    - montoValido(monto: double) : boolean
+  }
+
+  enum EstadoPedido {
+    PENDIENTE
+    PAGADO
+    ENVIADO
+    ENTREGADO
+    DEVUELTO
+    CANCELADO
+  }
+
+  enum TipoEnvio {
+    ESTANDAR
+    EXPRES
+    INTERNACIONAL
+    + calcularCosto(pesoKg: double) : double
+    + getTarifaPorKg() : double
+    + getDescripcion() : String
+  }
+
+  enum TipoTransaccion {
+    PAGO
+    DEVOLUCION
+  }
+
+  enum EstadoTransaccion {
+    PENDIENTE
+    APROBADA
+    RECHAZADA
+    REEMBOLSADA
+  }
+}
+
+' ─────────────────────────────
+' INTERFACES DE SERVICIO
+' ─────────────────────────────
+package "service (interfaces)" {
+
+  interface IClienteService {
+    + listar() : List<Cliente>
+    + guardar(cliente: Cliente) : Cliente
+    + buscarPorId(id: Long) : Optional<Cliente>
+    + buscarPorNombre(nombre: String) : List<Cliente>
+    + eliminar(id: Long) : void
+  }
+
+  interface IProductoService {
+    + listar() : List<Producto>
+    + guardar(producto: Producto) : Producto
+    + buscarPorId(id: Long) : Optional<Producto>
+    + buscarPorNombre(nombre: String) : List<Producto>
+    + eliminar(id: Long) : void
+  }
+
+  interface IPedidoService {
+    + listar() : List<Pedido>
+    + crear(clienteId: Long) : Pedido
+    + agregarItem(pedidoId: Long, productoId: Long, cantidad: int) : Pedido
+    + buscarPorId(id: Long) : Optional<Pedido>
+    + buscarPorCliente(clienteId: Long) : List<Pedido>
+    + buscarPorTotalMayorA(total: double) : List<Pedido>
+    + cambiarEstado(pedidoId: Long, estado: EstadoPedido) : Pedido
+    + eliminar(id: Long) : void
+  }
+
+  interface IEnvioService {
+    + listar() : List<Envio>
+    + listarPorPedido(pedidoId: Long) : List<Envio>
+    + crearEnvio(pedidoId: Long, tipo: TipoEnvio, peso: double, dir: String) : Envio
+    + buscarPorId(id: Long) : Optional<Envio>
+    + actualizarEstado(id: Long, estado: String) : Envio
+    + calcularCostoEnvio(tipo: TipoEnvio, peso: double) : double
+  }
+
+  interface ITransaccionService {
+    + listar() : List<Transaccion>
+    + listarPorPedido(pedidoId: Long) : List<Transaccion>
+    + registrarPago(pedidoId: Long, monto: double) : Transaccion
+    + registrarDevolucion(pedidoId: Long, monto: double) : Transaccion
+    + buscarPorId(id: Long) : Optional<Transaccion>
+  }
+}
+
+' ─────────────────────────────
+' IMPLEMENTACIONES
+' ─────────────────────────────
+package "service (impl)" {
+  class ClienteService
+  class ProductoService
+  class PedidoService
+  class EnvioService
+  class TransaccionService
+}
+
+' ─────────────────────────────
+' CONTROLLERS
+' ─────────────────────────────
+package "controller" {
+  class ClienteController {
+    + listar() : List<Cliente>
+    + buscarPorId(id: Long) : ResponseEntity<Cliente>
+    + buscarPorNombre(nombre: String) : List<Cliente>
+    + guardar(cliente: Cliente) : Cliente
+    + actualizar(id: Long, cliente: Cliente) : ResponseEntity<Cliente>
+    + eliminar(id: Long) : ResponseEntity<Void>
+  }
+  class PedidoController
+  class ProductoController
+  class EnvioController
+  class TransaccionController
+}
+
+' ─────────────────────────────
+' REPOSITORIES
+' ─────────────────────────────
+package "repository" {
+  interface ClienteRepository
+  interface ProductoRepository
+  interface PedidoRepository
+  interface EnvioRepository
+  interface TransaccionRepository
+  interface ItemPedidoRepository
+}
+
+' ─────────────────────────────
+' RELACIONES — MODELOS
+' ─────────────────────────────
+Cliente "1" o-- "0..*" Pedido : tiene >
+Pedido "1" *-- "1..*" ItemPedido : compone >
+ItemPedido "many" --> "1" Producto : referencia >
+Pedido --> EstadoPedido : usa
+Envio --> TipoEnvio : usa
+Transaccion --> TipoTransaccion : usa
+Transaccion --> EstadoTransaccion : usa
+
+' ─────────────────────────────
+' IMPLEMENTACIONES DE INTERFACES
+' ─────────────────────────────
+ClienteService     ..|> IClienteService
+ProductoService    ..|> IProductoService
+PedidoService      ..|> IPedidoService
+EnvioService       ..|> IEnvioService
+TransaccionService ..|> ITransaccionService
+
+' ─────────────────────────────
+' CONTROLLERS → INTERFACES
+' ─────────────────────────────
+ClienteController     --> IClienteService
+PedidoController      --> IPedidoService
+ProductoController    --> IProductoService
+EnvioController       --> IEnvioService
+TransaccionController --> ITransaccionService
+
+' ─────────────────────────────
+' SERVICES → REPOSITORIES
+' ─────────────────────────────
+ClienteService     --> ClienteRepository
+ProductoService    --> ProductoRepository
+EnvioService       --> EnvioRepository
+TransaccionService --> TransaccionRepository
+PedidoService      --> PedidoRepository
+PedidoService      --> ClienteRepository
+PedidoService      --> ProductoRepository
+PedidoService      --> ItemPedidoRepository
+
+@enduml
