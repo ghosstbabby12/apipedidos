@@ -7,6 +7,7 @@ import co.ucc.apipedidos.repository.PedidoRepository;
 import co.ucc.apipedidos.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -33,11 +34,26 @@ public class PedidoService implements IPedidoService {
     }
 
     @Override
-    public Pedido crear(Long clienteId) {
+    public Pedido crear(Long clienteId, List<Map<String, Object>> items) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado: " + clienteId));
         Pedido pedido = new Pedido(cliente);
-        return pedidoRepository.save(pedido);
+        Pedido pedidoGuardado = pedidoRepository.save(pedido);
+
+        if (items != null) {
+            for (Map<String, Object> itemData : items) {
+                Long productoId = Long.valueOf(itemData.get("productoId").toString());
+                int cantidad = Integer.parseInt(itemData.get("cantidad").toString());
+                Producto producto = productoRepository.findById(productoId)
+                        .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + productoId));
+                ItemPedido item = new ItemPedido(producto, cantidad, pedidoGuardado);
+                itemPedidoRepository.save(item);
+                pedidoGuardado.agregarItem(item);
+            }
+        }
+
+        pedidoGuardado.setTotal(pedidoGuardado.calcularSubtotal());
+        return pedidoRepository.save(pedidoGuardado);
     }
 
     @Override

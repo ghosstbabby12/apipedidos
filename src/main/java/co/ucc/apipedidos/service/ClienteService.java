@@ -26,8 +26,12 @@ public class ClienteService implements IClienteService {
 
     @Override
     public Cliente guardar(Cliente cliente) {
-        return clienteRepository.save(cliente);
+        if (cliente.getCorreo() == null || !cliente.getCorreo().contains("@")) {
+            throw new IllegalArgumentException("El correo no es válido");
     }
+    return clienteRepository.save(cliente);
+}
+
 
     @Override
     public Optional<Cliente> buscarPorId(Long id) {

@@ -15,39 +15,79 @@ package "model" {
     - direccion : String
     - telefono : String
     - correo : String
-    + listar() : List<Pedido>
+    - pedidos : List<Pedido>
+    + getId() : Long
+    + setId(id: Long) : void
     + getNombre() : String
     + setNombre(nombre: String) : void
+    + getDireccion() : String
+    + setDireccion(direccion: String) : void
+    + getTelefono() : String
+    + setTelefono(telefono: String) : void
     + getCorreo() : String
     + setCorreo(correo: String) : void
+    + getPedidos() : List<Pedido>
+    + setPedidos(pedidos: List<Pedido>) : void
   }
 
   class Pedido {
     - id : Long
     - fecha : LocalDate
+    - cliente : Cliente
+    - items : List<ItemPedido>
     - estado : EstadoPedido
     - total : double
     + agregarItem(item: ItemPedido) : void
-    + cambiarEstado(estado: EstadoPedido) : void
+    + cambiarEstado(nuevoEstado: EstadoPedido) : void
     + calcularSubtotal() : double
     + calcularTotal(descuento: double, impuesto: double) : double
+    - recalcularTotal() : void
+    + getId() : Long
+    + setId(id: Long) : void
+    + getFecha() : LocalDate
+    + setFecha(fecha: LocalDate) : void
+    + getCliente() : Cliente
+    + setCliente(cliente: Cliente) : void
+    + getItems() : List<ItemPedido>
+    + setItems(items: List<ItemPedido>) : void
+    + getEstado() : EstadoPedido
+    + setEstado(estado: EstadoPedido) : void
+    + getTotal() : double
+    + setTotal(total: double) : void
   }
 
   class ItemPedido {
     - id : Long
+    - producto : Producto
     - cantidad : int
+    - pedido : Pedido
     + calcularSubtotal() : double
+    + getId() : Long
+    + setId(id: Long) : void
+    + getProducto() : Producto
+    + setProducto(producto: Producto) : void
+    + getCantidad() : int
+    + setCantidad(cantidad: int) : void
+    + getPedido() : Pedido
+    + setPedido(pedido: Pedido) : void
   }
 
   class Producto {
     - id : Long
     - nombre : String
     - precio : double
+    + getId() : Long
+    + setId(id: Long) : void
+    + getNombre() : String
+    + setNombre(nombre: String) : void
+    + getPrecio() : double
+    + setPrecio(precio: double) : void
   }
 
   class Envio {
     - id : Long
     - pedidoId : Long
+    - tipoEnvio : TipoEnvio
     - pesoKg : double
     - costoEnvio : double
     - direccionDestino : String
@@ -55,29 +95,56 @@ package "model" {
     - estadoEnvio : String
     ~ numeroRastreo : String
     + construirNumeroRastreo() : String
-    + actualizarPeso(peso: double) : void
+    + actualizarPeso(nuevoPesoKg: double) : void
     # generarNumeroRastreoManual(id: Long, tipo: TipoEnvio) : String
     - calcularCosto() : double
+    + getId() : Long
+    + setId(id: Long) : void
+    + getPedidoId() : Long
+    + setPedidoId(pedidoId: Long) : void
+    + getTipoEnvio() : TipoEnvio
+    + setTipoEnvio(tipoEnvio: TipoEnvio) : void
+    + getPesoKg() : double
+    + getCostoEnvio() : double
+    + getDireccionDestino() : String
+    + setDireccionDestino(direccion: String) : void
+    + getFechaEnvio() : LocalDateTime
+    + getEstadoEnvio() : String
+    + setEstadoEnvio(estadoEnvio: String) : void
+    + getNumeroRastreo() : String
+    + setNumeroRastreo(numeroRastreo: String) : void
   }
 
   class Transaccion {
     - id : Long
     - pedidoId : Long
+    - tipo : TipoTransaccion
     - monto : double
     - fecha : LocalDateTime
+    - estado : EstadoTransaccion
     ~ referencia : String
     + esDevolucion() : boolean
     + construirReferencia() : String
     # generarReferenciaManual(id: Long, tipo: TipoTransaccion) : String
     - montoValido(monto: double) : boolean
+    + getId() : Long
+    + setId(id: Long) : void
+    + getPedidoId() : Long
+    + setPedidoId(pedidoId: Long) : void
+    + getTipo() : TipoTransaccion
+    + setTipo(tipo: TipoTransaccion) : void
+    + getMonto() : double
+    + setMonto(monto: double) : void
+    + getFecha() : LocalDateTime
+    + getEstado() : EstadoTransaccion
+    + setEstado(estado: EstadoTransaccion) : void
+    + getReferencia() : String
+    + setReferencia(referencia: String) : void
   }
 
   enum EstadoPedido {
-    PENDIENTE
+    CREADO
     PAGADO
-    ENVIADO
-    ENTREGADO
-    DEVUELTO
     CANCELADO
   }
 
@@ -126,7 +193,7 @@ package "service (interfaces)" {
 
   interface IPedidoService {
     + listar() : List<Pedido>
-    + crear(clienteId: Long) : Pedido
+    + crear(clienteId: Long, items: List<Map>) : Pedido
     + agregarItem(pedidoId: Long, productoId: Long, cantidad: int) : Pedido
     + buscarPorId(id: Long) : Optional<Pedido>
     + buscarPorCliente(clienteId: Long) : List<Pedido>
@@ -176,8 +243,21 @@ package "controller" {
     + actualizar(id: Long, cliente: Cliente) : ResponseEntity<Cliente>
     + eliminar(id: Long) : ResponseEntity<Void>
   }
-  class PedidoController
-  class ProductoController
+  class PedidoController {
+    + listar() : List<Pedido>
+    + buscarPorId(id: Long) : ResponseEntity<Pedido>
+    + buscarPorCliente(clienteId: Long) : List<Pedido>
+    + crear(body: Map) : Pedido
+    + agregarItem(id: Long, body: Map) : ResponseEntity<Pedido>
+    + cambiarEstado(id: Long, body: Map) : ResponseEntity<Pedido>
+    + eliminar(id: Long) : ResponseEntity<Void>
+  }
+  class ProductoController {
+    + listar() : List<Producto>
+    + buscarPorId(id: Long) : ResponseEntity<Producto>
+    + guardar(producto: Producto) : Producto
+    + eliminar(id: Long) : ResponseEntity<Void>
+  }
   class EnvioController
   class TransaccionController
 }
